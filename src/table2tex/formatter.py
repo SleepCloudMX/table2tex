@@ -135,7 +135,7 @@ def _format_from_scratch(
             lines.append(r'\begin{frame}')
             lines.append(r'\centering')
         else:
-            lines.append(r'\documentclass{article}')
+            lines.append(r'\documentclass{ctexart}')
             lines.append(r'\usepackage{booktabs, multirow, makecell, xcolor}')
             lines.append(r'\begin{document}')
 

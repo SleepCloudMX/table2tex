@@ -28,24 +28,54 @@ def parse_cell_value(text: str) -> Tuple[bool, Optional[float], bool]:
         return False, None, False
 
 
+_FMT_CMD_RE = re.compile(
+    r'\\(?:textbf|textit|text|mathbf|boldsymbol|emph|color\{[^}]*\})\s*\{'
+)
+
+_TEX_UNESCAPE_MAP = {
+    r'\%': '%', r'\$': '$', r'\&': '&', r'\_': '_',
+    r'\#': '#', r'\{': '{', r'\}': '}', r'\textasciitilde{}': '~',
+}
+
+
 def strip_tex_formatting(cell: str) -> str:
-    """Remove \\textbf, \\color{red}, \\text, \\textit etc. to extract the core value."""
+    """Strip TeX formatting commands (\\textbf, \\color{red}, bare braces etc.)
+    to extract the core value. Handles nested wrappers like {\\textbf{79.31}}."""
     s = cell.strip()
-    # Remove \color{red}{...}
-    s = re.sub(r'\\color\{[^}]*\}\{', '', s)
-    # Remove \textbf{...}
-    s = re.sub(r'\\textbf\{', '', s)
-    # Remove \textit{...}
-    s = re.sub(r'\\textit\{', '', s)
-    # Remove \text{...}
-    s = re.sub(r'\\text\{', '', s)
-    # Remove \mathbf{...}
-    s = re.sub(r'\\mathbf\{', '', s)
-    # Remove closing braces that were opened by the above
-    # Count how many we removed and remove that many closing braces at the end
-    # Simpler: just remove all orphan } at the end
-    s = s.rstrip('}')
+    prev = None
+    while s != prev:
+        prev = s
+        m = _FMT_CMD_RE.match(s)
+        if m:
+            inner = s[m.end():]
+            close = _find_matching_brace(inner)
+            if close >= 0:
+                s = inner[:close]
+                continue
+        # Bare {...} wrapper
+        if s.startswith('{') and s.endswith('}'):
+            if _find_matching_brace(s[1:]) == len(s) - 2:
+                s = s[1:-1]
+                continue
+        break
+    # Unescape TeX escapes so that parse_cell_value works on e.g. 96.88\%
+    for escape, char in _TEX_UNESCAPE_MAP.items():
+        s = s.replace(escape, char)
     return s.strip()
+
+
+def _find_matching_brace(text: str) -> int:
+    """Return the index of the '}' that matches the opening brace at position 0.
+    Returns -1 if not found."""
+    depth = 1
+    for i, ch in enumerate(text):
+        if ch == '{':
+            depth += 1
+        elif ch == '}':
+            depth -= 1
+            if depth == 0:
+                return i
+    return -1
 
 
 def split_tex_cells(row: str) -> list[str]:

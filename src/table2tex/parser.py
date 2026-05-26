@@ -243,14 +243,12 @@ def _pad_row(row: list[str], n: int) -> list[str]:
 def _build_column_meta(data: list[list[str]], num_cols: int) -> list[ColumnMeta]:
     columns = []
     for ci in range(num_cols):
-        all_numeric = True
+        numeric_count = 0
         for row in data:
             cell = row[ci] if ci < len(row) else ''
             is_num, _, _ = parse_cell_value(cell)
-            if not cell.strip():  # empty cell = missing value, skip
-                continue
-            if not is_num:
-                all_numeric = False
-                break
-        columns.append(ColumnMeta(index=ci, is_numeric=all_numeric))
+            if is_num:
+                numeric_count += 1
+        # Process column if it has at least 2 numeric values
+        columns.append(ColumnMeta(index=ci, is_numeric=numeric_count >= 2))
     return columns
