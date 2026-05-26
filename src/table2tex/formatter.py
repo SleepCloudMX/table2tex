@@ -194,20 +194,12 @@ def _apply_highlight(core: str, level: int) -> str:
 
 def _escape_tex(text: str) -> str:
     """Escape special TeX characters in a plain text cell."""
-    replacements = [
-        ('&', r'\&'),
-        ('%', r'\%'),
-        ('$', r'\$'),
-        ('#', r'\#'),
-        ('_', r'\_'),
-        ('{', r'\{'),
-        ('}', r'\}'),
-        ('~', r'\textasciitilde{}'),
-        ('^', r'\^{}'),
-    ]
-    for char, repl in replacements:
-        text = text.replace(char, repl)
-    return text
+    _ESC_MAP = {
+        '&': r'\&', '%': r'\%', '$': r'\$', '#': r'\#',
+        '_': r'\_', '{': r'\{', '}': r'\}',
+        '~': r'\textasciitilde{}', '^': r'\^{}',
+    }
+    return ''.join(_ESC_MAP.get(ch, ch) for ch in text)
 
 
 def _build_col_spec(table: TableData) -> str:

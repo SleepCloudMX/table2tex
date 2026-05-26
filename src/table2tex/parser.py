@@ -5,13 +5,13 @@ from table2tex.model import TableData, ColumnMeta
 from table2tex.utils import parse_cell_value, strip_tex_formatting, split_tex_cells
 
 
-def parse_table(filepath: str) -> TableData:
+def parse_table(filepath: str, sheet_name: str | None = None) -> TableData:
     """Dispatch to the appropriate parser based on file extension."""
     ext = Path(filepath).suffix.lower()
     if ext == '.md':
         return _parse_markdown(filepath)
     elif ext in ('.xls', '.xlsx'):
-        return _parse_excel(filepath)
+        return _parse_excel(filepath, sheet_name=sheet_name)
     elif ext == '.tex':
         return _parse_tex(filepath)
     else:
@@ -139,7 +139,12 @@ _TABLE_ENV_RE = re.compile(
     re.DOTALL,
 )
 
-_HLINE_RE = re.compile(r'\s*\\hline\s*')
+# Matches \hline, \toprule, \midrule, \bottomrule, \cmidrule(lr){1-2} etc.
+_RULE_RE = re.compile(
+    r'\s*\\(?:hline|toprule|midrule|bottomrule'
+    r'|cmidrule(?:\([^)]*\))?(?:\{[^}]*\})?'
+    r')\s*'
+)
 
 
 def _parse_tex(filepath: str) -> TableData:
@@ -164,8 +169,8 @@ def _parse_tex(filepath: str) -> TableData:
 
     for frag in raw_fragments:
         # Check if this fragment starts with \hline
-        has_hline = bool(_HLINE_RE.match(frag))
-        cleaned = _HLINE_RE.sub('', frag).strip()
+        has_hline = bool(_RULE_RE.match(frag))
+        cleaned = _RULE_RE.sub('', frag).strip()
         if not cleaned:
             # It was only an \hline, record it for the row before which it appears
             hlines.add(len(cell_rows))
@@ -181,13 +186,23 @@ def _parse_tex(filepath: str) -> TableData:
     if not cell_rows:
         raise ValueError("No data rows found in TeX table body")
 
-    # First row = header
-    headers = [[strip_tex_formatting(c) for c in cell_rows[0]]]
-    tex_headers = [cell_rows[0]]
+    # Header detection: first row is header unless all its cells are numeric
+    first_stripped = [strip_tex_formatting(c) for c in cell_rows[0]]
+    first_all_numeric = all(
+        parse_cell_value(c)[0] or not c.strip() for c in first_stripped
+    )
+    if first_all_numeric:
+        headers: list[list[str]] = []
+        tex_headers: list[list[str]] = []
+        data_start = 0
+    else:
+        headers = [first_stripped]
+        tex_headers = [cell_rows[0]]
+        data_start = 1
 
     data = []
     tex_rows = []
-    for row in cell_rows[1:]:
+    for row in cell_rows[data_start:]:
         stripped = [strip_tex_formatting(c) for c in row]
         data.append(stripped)
         tex_rows.append(row)
@@ -204,8 +219,8 @@ def _parse_tex(filepath: str) -> TableData:
     # Adjust hlines for header offset: hlines track positions in tex_rows (which includes headers)
     # Already correct since hlines was computed against cell_rows
 
-    # Check for trailing \hline after last row
-    trailing_hline = bool(re.search(r'\\hline\s*$', body))
+    # Check for trailing rule command after last row
+    trailing_hline = bool(re.search(r'\\(?:hline|toprule|midrule|bottomrule)\s*$', body))
 
     return TableData(
         headers=headers,

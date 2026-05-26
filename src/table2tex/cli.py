@@ -41,10 +41,7 @@ def main():
         sys.exit(1)
 
     # Parse
-    parse_kwargs = {}
-    if args.sheet:
-        parse_kwargs['sheet_name'] = args.sheet
-    table = parse_table(str(input_path), **parse_kwargs)
+    table = parse_table(str(input_path), sheet_name=args.sheet)
 
     # Apply --descend overrides
     if args.descend is not None:
