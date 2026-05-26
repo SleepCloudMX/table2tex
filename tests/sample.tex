@@ -1,0 +1,25 @@
+\input{settings}
+
+\usepackage{booktabs, multirow, makecell}
+
+\begin{document}
+
+\[
+\begin{array}{c|c|cc|cccc}
+\hline
+\textbf{数据} & \tau & \textbf{实例Rec} & \textbf{实例Prec} & \textbf{误检实例} & \textbf{误检实例像素} & \textbf{漏检实例} & \textbf{漏检实例像素} \\
+\hline
+\multirow{3}{*}{\text{验证}}
+    & 0.5  & 96.8795\% & 66.5777\% & 1127 & 628588 & 87  & 22381  \\
+    & 0.2  & 94.5839\% & 70.7638\% & 911  & 251227 & 151 & 60235  \\
+    & 0.01 & 92.3242\% & 71.2647\% & 877  & 212897 & 214 & 109453 \\
+\hline
+\multirow{3}{*}{\text{测试}}
+    & 0.5  & 97.4100\% & 69.5953\% & 2329 & 1301690& 182 & 75094  \\
+    & 0.2  & 95.2042\% & 73.8518\% & 1856 & 466622 & 337 & 203103 \\
+    & 0.01 & 93.2831\% & 74.4641\% & 1775 & 337604 & 472 & 412050 \\
+\hline
+\end{array}
+\]
+
+\end{document}
