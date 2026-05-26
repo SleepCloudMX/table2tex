@@ -1,8 +1,15 @@
+# Python
 __pycache__/
 *.pyc
 *.egg-info/
 dist/
 build/
 
+# Claude Code (project-level)
 .claude
+
+# Reference material (not part of the tool)
 docs/
+
+# Test outputs
+output/
