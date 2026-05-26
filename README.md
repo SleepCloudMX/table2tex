@@ -12,66 +12,25 @@ pip install -e .
 
 依赖：Python ≥ 3.10，openpyxl ≥ 3.1。`pip install -e .` 会自动安装 openpyxl。
 
-> 本地开发环境名为 `ai` 而非 `convert`，按自己实际环境调整。
-
 ## 基本用法
 
-安装后直接使用 `table2tex` 命令（也可通过 `python -m table2tex` 调用）。
+安装后直接使用 `table2tex` 命令（也可 `python -m table2tex`）。
 
-### （1）Markdown → LaTeX
-
-```bash
-table2tex data.md -o out.tex
-```
-
-### （2）Excel → LaTeX
+### （1）基本转换
 
 ```bash
+table2tex data.md -o out.tex       # 三种后缀均支持
 table2tex data.xlsx -o out.tex
-table2tex data.xlsx --sheet Sheet2 -o out.tex   # 指定工作表
-```
-
-### （3）TeX → LaTeX
-
-输入 TeX 表时只在原文本上替换 cell 内容，完整保留 `\begin{array}` / `\begin{tabular}`、`\multirow`、`\hline`、导言区等所有结构。已有的 `\textbf` 和 `\color{red}` 会被剥离后重新排名。
-
-```bash
 table2tex data.tex -o out.tex
+table2tex data.md                  # 省略 -o 则打印到 stdout
 ```
 
-### （4）指定越小越好的列
-
-默认越大越好。`--descend` 指定越小越好的列（1-based 列号）：
-
-```bash
-# 第 2、5、6 列越小越好
-table2tex data.tex --descend 2 5 6 -o out.tex
-```
-
-### （5）列背景色
-
-F1 列蓝色背景、IoU 列黄色背景（1-based 列号）：
+### （2）常用选项
 
 ```bash
 table2tex data.md --column-bg 5:blue!12 6:yellow!12 -o out.tex
-```
-
-有列背景色时自动切换为 beamer 文档类（需要 `colortbl` 宏包），无背景色则用 `ctexart`（支持中文）。
-
-### （6）只输出表格片段
-
-```bash
-table2tex data.md --no-document
-```
-
-不含 `\documentclass`、`\begin{document}` 等包装，可直接粘贴到现有 LaTeX 文档。
-
-### （7）打印到 stdout
-
-省略 `-o` 则结果直接打印到终端：
-
-```bash
-table2tex data.md
+table2tex data.tex --descend 2 5 6 -o out.tex
+table2tex data.md --no-document    # 只输出 tabular 块
 ```
 
 ## 参数
