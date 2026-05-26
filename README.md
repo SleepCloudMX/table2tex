@@ -5,52 +5,98 @@
 ## 安装
 
 ```bash
-conda activate ai
+conda create -n convert python=3.12 -y
+conda activate convert
 pip install -e .
 ```
 
-依赖：Python ≥ 3.10，openpyxl ≥ 3.1。
+依赖：Python ≥ 3.10，openpyxl ≥ 3.1。`pip install -e .` 会自动安装 openpyxl。
+
+> 本地开发环境名为 `ai` 而非 `convert`，按自己实际环境调整。
 
 ## 基本用法
 
+安装后直接使用 `table2tex` 命令（也可通过 `python -m table2tex` 调用）。
+
+### （1）Markdown → LaTeX
+
 ```bash
-# Markdown → LaTeX
-python -m table2tex data.md -o out.tex
-
-# Excel → LaTeX
-python -m table2tex data.xlsx -o out.tex
-
-# TeX → LaTeX（仅添加红/粗标注，保留原有结构）
-python -m table2tex data.tex -o out.tex
-
-# 不指定 -o 则打印到 stdout
-python -m table2tex data.md
+table2tex data.md -o out.tex
 ```
 
-## 标注规则
+### （2）Excel → LaTeX
 
-- **每列最优值** → `\color{red}{value}`（红色）
-- **每列次优值** → `\textbf{value}`（加粗）
-- 并列最优/次优：多个单元格共享同色标注
-- 默认**越大越好**，通过 `--descend` 指定越小越好的列
-- 列中数值少于 2 个时不标注（无法比较）
-- 含 `%` 的列正常处理（剥离 → 比较 → 拼回）
-- 含 `--` 等非数值单元格仅跳过，不影响该列参与比较
+```bash
+table2tex data.xlsx -o out.tex
+table2tex data.xlsx --sheet Sheet2 -o out.tex   # 指定工作表
+```
+
+### （3）TeX → LaTeX
+
+输入 TeX 表时只在原文本上替换 cell 内容，完整保留 `\begin{array}` / `\begin{tabular}`、`\multirow`、`\hline`、导言区等所有结构。已有的 `\textbf` 和 `\color{red}` 会被剥离后重新排名。
+
+```bash
+table2tex data.tex -o out.tex
+```
+
+### （4）指定越小越好的列
+
+默认越大越好。`--descend` 指定越小越好的列（1-based 列号）：
+
+```bash
+# 第 2、5、6 列越小越好
+table2tex data.tex --descend 2 5 6 -o out.tex
+```
+
+### （5）列背景色
+
+F1 列蓝色背景、IoU 列黄色背景（1-based 列号）：
+
+```bash
+table2tex data.md --column-bg 5:blue!12 6:yellow!12 -o out.tex
+```
+
+有列背景色时自动切换为 beamer 文档类（需要 `colortbl` 宏包），无背景色则用 `ctexart`（支持中文）。
+
+### （6）只输出表格片段
+
+```bash
+table2tex data.md --no-document
+```
+
+不含 `\documentclass`、`\begin{document}` 等包装，可直接粘贴到现有 LaTeX 文档。
+
+### （7）打印到 stdout
+
+省略 `-o` 则结果直接打印到终端：
+
+```bash
+table2tex data.md
+```
 
 ## 参数
 
 | 参数 | 说明 |
 |------|------|
 | `input` | 输入文件路径（.md / .xlsx / .xls / .tex） |
-| `-o, --output` | 输出 .tex 路径（默认打印到 stdout） |
+| `-o, --output` | 输出 .tex 路径（默认打印到 stdout，自动创建父目录） |
 | `--descend COL [COL ...]` | 1-based 列号，指定越小越好的列 |
-| `--column-bg COL:COLOR [...]` | 1-based 列背景色，如 `5:blue!12`（自动启用 beamer 模板） |
-| `--no-document` | 只输出 tabular 块，不含 `\documentclass` 等包装 |
+| `--column-bg COL:COLOR [...]` | 1-based 列背景色，如 `5:blue!12`。颜色为 xcolor 语法 |
+| `--no-document` | 只输出 tabular 块 |
 | `--sheet NAME` | Excel 工作表名（默认用活动工作表） |
+
+## 标注规则
+
+- 每列**最优值** → `\color{red}{value}`
+- 每列**次优值** → `\textbf{value}`
+- 并列最优/次优共享同色标注
+- 列中数值少于 2 个时不标注
+- 含 `%` 的列正常处理（剥离 `%` → 比较 → 拼回 `\%`）
+- 含 `--` 等非数值单元格仅跳过，不影响该列参与比较
 
 ## 示例
 
-以下示例基于 input/sample.md（论文实验对比表）：
+以下示例基于这张对比表（`sample.md`）：
 
 ```
 | Model              | OA    | Prec  | Recall | F1    | IoU   |
@@ -64,13 +110,13 @@ python -m table2tex data.md
 | DirectOVCD         | 98.45 | 76.35 | 91.26  | 83.14 | 71.14 |
 ```
 
-### 基础转换
+### （1）基础转换
 
 ```bash
-python -m table2tex input/sample.md -o output/sample.tex
+table2tex sample.md -o sample.tex
 ```
 
-输出（默认 `ctexart` 文档类，支持中文）：
+输出：
 
 ```latex
 \documentclass{ctexart}
@@ -92,12 +138,12 @@ DirectOVCD         & \color{red}{98.45} & \textbf{76.35} & 91.26  & \color{red}{
 \end{document}
 ```
 
-OA 列：98.45 最优（红）、97.92 次优（粗）——`--` 被跳过不影响排名。
+OA 列 98.45 最优（红）、97.92 次优（粗）—— `--` 不影响排名。
 
-### 列背景色（F1 蓝色、IoU 黄色）
+### （2）列背景色：F1 蓝色、IoU 黄色
 
 ```bash
-python -m table2tex input/sample.md --column-bg 5:blue!12 6:yellow!12 -o output/sample_bg.tex
+table2tex sample.md --column-bg 5:blue!12 6:yellow!12 -o sample_bg.tex
 ```
 
 有列背景色时自动切换为 beamer 模板：
@@ -121,29 +167,25 @@ DirectOVCD & \color{red}{98.45} & \textbf{76.35} & 91.26 & \color{red}{83.14} & 
 \end{document}
 ```
 
-### 指定越小越好的列 + Excel 输入
+### （3）TeX 输入：越小越好的列
+
+原始 `sample.tex` 是一张包含 `\multirow` 和 `\begin{array}` 的表格。τ、误检实例、误检实例像素、漏检实例、漏检实例像素 这五列越小越好。
 
 ```bash
-# τ 列和误检/漏检列 → 越小越好
-python -m table2tex input/sample.tex --descend 2 5 6 7 8 -o output/sample_tex.tex
+table2tex sample.tex --descend 2 5 6 7 8 -o sample_tex.tex
 ```
 
-输入是 TeX 表时，只在原文本上替换 cell 内容，**完整保留** `\begin{array}` / `\begin{tabular}`、`\multirow`、`\hline`、导言区等所有结构。
+输出保留原始 `\input{settings}`、`\[`、`\begin{array}`、`\multirow` 等所有结构，仅 cell 内容被替换为带红/粗标注的版本。
+
+### （4）Excel 输入
 
 ```bash
-# Excel 同样支持 --descend 和 --column-bg
-python -m table2tex data.xlsx --descend 3 --column-bg 4:red!5 -o out.tex
+table2tex sample.xlsx --descend 3 -o sample_xl.tex
 ```
 
-### 只输出表格片段
+首行自动识别为表头，合并单元格自动展开。
 
-```bash
-python -m table2tex data.md --no-document
-```
-
-输出不含 `\documentclass`、`\begin{document}` 等包装，可直接粘贴到现有 LaTeX 文档中。
-
-## 输入格式说明
+## 输入格式一览
 
 | 格式 | 后缀 | 处理方式 |
 |------|------|----------|
@@ -151,14 +193,4 @@ python -m table2tex data.md --no-document
 | Excel | `.xlsx` `.xls` | 首行作表头，自动展开合并单元格 |
 | TeX | `.tex` | 查找 `\begin{array}` 或 `\begin{tabular}`，在原文本上替换 cell 内容 |
 
-TeX 输入会自动剥离已有的 `\textbf`、`\color{red}` 标注后重新排名；`\multirow` 行保留不动（其文本一般为标签而非指标）。
-
-## 列背景色
-
-`--column-bg` 使用 1-based 列号，颜色为 xcolor 语法：
-
-```
---column-bg 3:blue!12 5:green!10 7:yellow!20
-```
-
-有列背景色时自动使用 beamer 文档类（需要 `colortbl` 宏包），无背景色则用 `ctexart`。
+TeX 输入中 `\multirow` 行保留不动（其文本一般为标签而非指标），已有的 `\textbf` / `\color{red}` 标注会被剥离后重新排名。
