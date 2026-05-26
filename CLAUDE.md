@@ -22,12 +22,12 @@ parse_table(path) → TableData → format_table(table, options) → str
 
 ### parse_table (parser.py)
 
-按后缀分发到 `_parse_markdown` / `_parse_csv` / `_parse_excel` / `_parse_tex`。四种解析器都输出统一的 `TableData`：
+按后缀分发到 `_parse_markdown` / `_parse_tabular`（csv/xls/xlsx 共用 pandas） / `_parse_tex`。三种解析器都输出统一的 `TableData`：
 
 - `headers: list[list[str]]` — 多行表头（纯文本，TeX 已剥离格式）
 - `data: list[list[str]]` — 数据行（同上，纯文本）
 - `columns: list[ColumnMeta]` — `is_numeric` 为 True 当列中 ≥ 2 个解析成功数值（非数值如 `--` 仅跳过不参与比较）
-- `source: 'md' | 'csv' | 'xlsx' | 'tex'`
+- `source: 'md' | 'csv' | 'xls' | 'xlsx' | 'tex'`
 
 TeX 解析器额外填充 `tex_source`、`tex_body_start/end`、`tex_rows`（原始 cell 文本含 TeX 格式）、`tex_hlines`、`tex_trailing_hline` 等字段，用于后续字符串替换。
 

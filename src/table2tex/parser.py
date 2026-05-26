@@ -1,4 +1,3 @@
-import csv as _csv
 import re
 from pathlib import Path
 
@@ -11,10 +10,8 @@ def parse_table(filepath: str, sheet_name: str | None = None) -> TableData:
     ext = Path(filepath).suffix.lower()
     if ext == '.md':
         return _parse_markdown(filepath)
-    elif ext == '.csv':
-        return _parse_csv(filepath)
-    elif ext in ('.xls', '.xlsx'):
-        return _parse_excel(filepath, sheet_name=sheet_name)
+    elif ext in ('.csv', '.xls', '.xlsx'):
+        return _parse_tabular(filepath, sheet_name=sheet_name)
     elif ext == '.tex':
         return _parse_tex(filepath)
     else:
@@ -65,31 +62,26 @@ def _parse_markdown(filepath: str) -> TableData:
 
 
 # ---------------------------------------------------------------------------
-# Excel
+# CSV / Excel (via pandas)
 # ---------------------------------------------------------------------------
 
-def _parse_excel(filepath: str, sheet_name: str | None = None) -> TableData:
-    import openpyxl
+def _parse_tabular(filepath: str, sheet_name: str | None = None) -> TableData:
+    import pandas as pd
 
-    wb = openpyxl.load_workbook(filepath, data_only=True)
-    ws = wb[sheet_name] if sheet_name else wb.active
+    ext = Path(filepath).suffix.lower()
+    if ext == '.csv':
+        df = pd.read_csv(filepath, dtype=str, keep_default_na=False, na_values=[])
+    else:
+        df = pd.read_excel(filepath, sheet_name=sheet_name or 0, dtype=str)
 
-    # Read all rows as strings
-    raw_rows: list[list[str]] = []
-    for row in ws.iter_rows(min_row=1, max_row=ws.max_row, values_only=True):
-        str_row = [_excel_cell_str(c) for c in row]
-        if any(s for s in str_row):  # skip fully empty rows
-            raw_rows.append(str_row)
+    if df.empty:
+        raise ValueError("Table file is empty")
 
-    if not raw_rows:
-        raise ValueError("Excel sheet is empty")
-
-    # Handle merged cells: fill None cells that are in merged ranges
-    _fill_merged(raw_rows, ws)
-
-    # First row = header
-    headers = [raw_rows[0]]
-    data = raw_rows[1:]
+    headers = [[str(c) for c in df.columns]]
+    data = [
+        ['' if pd.isna(v) else str(v) for v in row]
+        for row in df.values.tolist()
+    ]
 
     max_cols = max((len(h) for h in headers), default=0)
     max_cols = max(max_cols, max((len(d) for d in data), default=0))
@@ -97,64 +89,7 @@ def _parse_excel(filepath: str, sheet_name: str | None = None) -> TableData:
     data = [_pad_row(d, max_cols) for d in data]
 
     columns = _build_column_meta(data, max_cols)
-    return TableData(headers=headers, data=data, columns=columns, source='xlsx')
-
-
-def _excel_cell_str(value) -> str:
-    if value is None:
-        return ''
-    if isinstance(value, (int, float)):
-        # preserve original formatting as much as possible
-        if isinstance(value, float) and value == int(value):
-            return str(int(value))
-        return str(value)
-    return str(value).strip()
-
-
-def _fill_merged(rows: list[list[str]], ws) -> None:
-    """Fill cells that are hidden by merged ranges with the top-left cell's value."""
-    for merged_range in ws.merged_cells.ranges:
-        min_col = merged_range.min_col - 1  # 0-based
-        max_col = merged_range.max_col - 1
-        min_row = merged_range.min_row - 1
-        max_row = merged_range.max_row - 1
-
-        top_left = ''
-        if min_row < len(rows) and min_col < len(rows[min_row]):
-            top_left = rows[min_row][min_col]
-
-        for r in range(min_row, min(max_row + 1, len(rows))):
-            for c in range(min_col, min(max_col + 1, len(rows[r]) if r < len(rows) else 0)):
-                if r == min_row and c == min_col:
-                    continue
-                while len(rows[r]) <= c:
-                    rows[r].append('')
-                if not rows[r][c]:
-                    rows[r][c] = top_left
-
-
-# ---------------------------------------------------------------------------
-# CSV
-# ---------------------------------------------------------------------------
-
-def _parse_csv(filepath: str) -> TableData:
-    with open(filepath, encoding='utf-8-sig', newline='') as f:
-        reader = _csv.reader(f)
-        raw_rows = [row for row in reader if any(c.strip() for c in row)]
-
-    if not raw_rows:
-        raise ValueError("CSV file is empty")
-
-    headers = [raw_rows[0]]
-    data = raw_rows[1:]
-
-    max_cols = max((len(h) for h in headers), default=0)
-    max_cols = max(max_cols, max((len(d) for d in data), default=0))
-    headers = [_pad_row(h, max_cols) for h in headers]
-    data = [_pad_row(d, max_cols) for d in data]
-
-    columns = _build_column_meta(data, max_cols)
-    return TableData(headers=headers, data=data, columns=columns, source='csv')
+    return TableData(headers=headers, data=data, columns=columns, source=ext.lstrip('.'))
 
 
 # ---------------------------------------------------------------------------

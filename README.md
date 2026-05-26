@@ -10,7 +10,7 @@ conda activate convert
 pip install -e .
 ```
 
-依赖：Python ≥ 3.10，openpyxl ≥ 3.1。`pip install -e .` 会自动安装 openpyxl。
+依赖：Python ≥ 3.10，pandas ≥ 2.0。`pip install -e .` 会自动安装 pandas。
 
 ## 基本用法
 
@@ -150,8 +150,8 @@ table2tex sample.xlsx --descend 3 -o sample_xl.tex
 | 格式 | 后缀 | 处理方式 |
 |------|------|----------|
 | Markdown | `.md` | 按 `|---|` 分隔行识别表头/数据，`|` 分割单元格 |
-| CSV | `.csv` | 首行作表头，标准逗号分隔，UTF-8 编码 |
-| Excel | `.xlsx` `.xls` | 首行作表头，自动展开合并单元格 |
+| CSV | `.csv` | 首行作表头（pandas 读取） |
+| Excel | `.xlsx` `.xls` | 首行作表头，`.xls` 旧格式同样支持（pandas 读取） |
 | TeX | `.tex` | 查找 `\begin{array}` 或 `\begin{tabular}`，在原文本上替换 cell 内容 |
 
 TeX 输入中 `\multirow` 行保留不动（其文本一般为标签而非指标），已有的 `\textbf` / `\color{red}` 标注会被剥离后重新排名。
