@@ -19,7 +19,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='Convert tables to LaTeX with best-value highlighting.'
     )
-    parser.add_argument('input', type=str, help='Input file (.md, .xlsx, .xls, .tex)')
+    parser.add_argument('input', type=str, help='Input file (.md, .csv, .xlsx, .xls, .tex)')
     parser.add_argument('-o', '--output', type=str, default=None,
                         help='Output .tex file (default: print to stdout)')
     parser.add_argument('--descend', type=int, nargs='*', default=None,

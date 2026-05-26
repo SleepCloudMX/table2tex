@@ -43,6 +43,13 @@ if errorlevel 1 (echo FAILED) else (echo OK)
 
 echo.
 echo ========================================
+echo  (5) CSV basic conversion
+echo ========================================
+table2tex sample.csv -o output\sample_csv.tex
+if errorlevel 1 (echo FAILED) else (echo OK)
+
+echo.
+echo ========================================
 echo  All tests done. Output in tests\output\
 echo ========================================
 dir /b output\

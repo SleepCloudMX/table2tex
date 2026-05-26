@@ -19,7 +19,8 @@ pip install -e .
 ### （1）基本转换
 
 ```bash
-table2tex data.md -o out.tex       # 三种后缀均支持
+table2tex data.md -o out.tex       # 支持 md / csv / xlsx / tex
+table2tex data.csv -o out.tex
 table2tex data.xlsx -o out.tex
 table2tex data.tex -o out.tex
 table2tex data.md                  # 省略 -o 则打印到 stdout
@@ -37,7 +38,7 @@ table2tex data.md --no-document    # 只输出 tabular 块
 
 | 参数 | 说明 |
 |------|------|
-| `input` | 输入文件路径（.md / .xlsx / .xls / .tex） |
+| `input` | 输入文件路径（.md / .csv / .xlsx / .xls / .tex） |
 | `-o, --output` | 输出 .tex 路径（默认打印到 stdout，自动创建父目录） |
 | `--descend COL [COL ...]` | 1-based 列号，指定越小越好的列 |
 | `--column-bg COL:COLOR [...]` | 1-based 列背景色，如 `5:blue!12`。颜色为 xcolor 语法 |
@@ -149,6 +150,7 @@ table2tex sample.xlsx --descend 3 -o sample_xl.tex
 | 格式 | 后缀 | 处理方式 |
 |------|------|----------|
 | Markdown | `.md` | 按 `|---|` 分隔行识别表头/数据，`|` 分割单元格 |
+| CSV | `.csv` | 首行作表头，标准逗号分隔，UTF-8 编码 |
 | Excel | `.xlsx` `.xls` | 首行作表头，自动展开合并单元格 |
 | TeX | `.tex` | 查找 `\begin{array}` 或 `\begin{tabular}`，在原文本上替换 cell 内容 |
 

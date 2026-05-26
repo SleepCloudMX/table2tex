@@ -1,3 +1,4 @@
+import csv as _csv
 import re
 from pathlib import Path
 
@@ -10,6 +11,8 @@ def parse_table(filepath: str, sheet_name: str | None = None) -> TableData:
     ext = Path(filepath).suffix.lower()
     if ext == '.md':
         return _parse_markdown(filepath)
+    elif ext == '.csv':
+        return _parse_csv(filepath)
     elif ext in ('.xls', '.xlsx'):
         return _parse_excel(filepath, sheet_name=sheet_name)
     elif ext == '.tex':
@@ -128,6 +131,30 @@ def _fill_merged(rows: list[list[str]], ws) -> None:
                     rows[r].append('')
                 if not rows[r][c]:
                     rows[r][c] = top_left
+
+
+# ---------------------------------------------------------------------------
+# CSV
+# ---------------------------------------------------------------------------
+
+def _parse_csv(filepath: str) -> TableData:
+    with open(filepath, encoding='utf-8-sig', newline='') as f:
+        reader = _csv.reader(f)
+        raw_rows = [row for row in reader if any(c.strip() for c in row)]
+
+    if not raw_rows:
+        raise ValueError("CSV file is empty")
+
+    headers = [raw_rows[0]]
+    data = raw_rows[1:]
+
+    max_cols = max((len(h) for h in headers), default=0)
+    max_cols = max(max_cols, max((len(d) for d in data), default=0))
+    headers = [_pad_row(h, max_cols) for h in headers]
+    data = [_pad_row(d, max_cols) for d in data]
+
+    columns = _build_column_meta(data, max_cols)
+    return TableData(headers=headers, data=data, columns=columns, source='csv')
 
 
 # ---------------------------------------------------------------------------

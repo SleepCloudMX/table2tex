@@ -37,6 +37,12 @@ table2tex sample.xlsx -o output/sample_xl.tex && echo OK || echo FAILED
 
 echo
 echo "========================================"
+echo " (5) CSV basic conversion"
+echo "========================================"
+table2tex sample.csv -o output/sample_csv.tex && echo OK || echo FAILED
+
+echo
+echo "========================================"
 echo " All tests done. Output in tests/output/"
 echo "========================================"
 ls -1 output/
