@@ -50,6 +50,13 @@ if errorlevel 1 (echo FAILED) else (echo OK)
 
 echo.
 echo ========================================
+echo  (6) Markdown with row/column exclusion
+echo ========================================
+table2tex sample.md --exclude-cols Model --exclude-rows "DynamicEarth (MCI)" "DynamicEarth (IMC)" -o output\sample_exclude.tex
+if errorlevel 1 (echo FAILED) else (echo OK)
+
+echo.
+echo ========================================
 echo  All tests done. Output in tests\output\
 echo ========================================
 dir /b output\

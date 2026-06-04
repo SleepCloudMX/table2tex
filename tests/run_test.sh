@@ -43,6 +43,12 @@ table2tex sample.csv -o output/sample_csv.tex && echo OK || echo FAILED
 
 echo
 echo "========================================"
+echo " (6) Markdown with row/column exclusion"
+echo "========================================"
+table2tex sample.md --exclude-cols Model --exclude-rows "DynamicEarth (MCI)" "DynamicEarth (IMC)" -o output/sample_exclude.tex && echo OK || echo FAILED
+
+echo
+echo "========================================"
 echo " All tests done. Output in tests/output/"
 echo "========================================"
 ls -1 output/

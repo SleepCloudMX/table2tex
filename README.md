@@ -38,10 +38,23 @@ table2tex input_dir/                    # 逐个打印到 stdout
 ### （3）常用选项
 
 ```bash
-table2tex data.md --column-bg 5:blue!12 6:yellow!12 -o out.tex
-table2tex data.tex --descend 2 5 6 -o out.tex
-table2tex data.md --no-document    # 只输出 tabular 块
+table2tex data.md --column-bg F1:blue!12 IoU:yellow!12 -o out.tex
+table2tex data.tex --descend τ 误检实例 漏检实例 -o out.tex
+table2tex data.md --exclude-cols Model --exclude-rows "DynEarth (MCI)" -o out.tex
+table2tex data.md --no-document         # 只输出 tabular 块
 ```
+
+## 列/行标识符（SPEC）
+
+`--descend`、`--column-bg`、`--exclude-rows`、`--exclude-cols` 统一使用以下格式：
+
+| 格式 | 含义 | 示例 |
+|------|------|------|
+| `N` | 1-based 位置索引 | `3` → 第 3 列/行 |
+| `NAME` | 名称匹配（`\textbf` 等自动剥离） | `F1` → 表头为 F1 的列 |
+| `=NAME` | 强制名称匹配 | `=3` → 表头恰好为 "3" 的列 |
+
+推荐使用名称，比数字索引更清晰、不易出错。
 
 ## 参数
 
@@ -49,8 +62,10 @@ table2tex data.md --no-document    # 只输出 tabular 块
 |------|------|
 | `input` | 输入文件或目录（.md / .csv / .xlsx / .xls / .tex） |
 | `-o, --output` | 输出 .tex 文件或目录（默认打印到 stdout） |
-| `--descend COL [COL ...]` | 1-based 列号，指定越小越好的列 |
-| `--column-bg COL:COLOR [...]` | 1-based 列背景色，如 `5:blue!12`。颜色为 xcolor 语法 |
+| `--descend SPEC [...]` | 越小越好的列（索引、名称或 =名称） |
+| `--column-bg SPEC:COLOR [...]` | 列背景色，如 `F1:blue!12`。颜色为 xcolor 语法 |
+| `--exclude-rows SPEC [...]` | 排除的行（索引或首列值，TeX 中 `\multirow` 跨行会连带排除） |
+| `--exclude-cols SPEC [...]` | 排除的列（索引或表头名称） |
 | `--no-document` | 只输出 tabular 块 |
 | `--sheet NAME` | Excel 工作表名（默认用活动工作表） |
 

@@ -54,4 +54,6 @@ TeX cell 的格式剥离在 `utils.strip_tex_formatting` 中：逐层剥离 `\te
 
 ### cli.py
 
-argparse，`--descend` 和 `--column-bg` 均为 1-based 列号，进入 `format_table` 前转为 0-based。
+argparse。`--descend`、`--column-bg`、`--exclude-rows`、`--exclude-cols` 统一使用 SPEC 格式：整数=1-based 索引，名称=表头/首列文本（自动剥离 TeX 格式），`=NAME`=强制名称。所有 SPEC 在排除前解析为原始表索引，排除后自动 remap。
+
+目录模式：遍历支持的文件，同名冲突用 `stem.ext.tex` 区分，生成 `summary.md`（array 表用 `$$`，tabular 用 ` ```latex `）。

@@ -208,6 +208,80 @@ def _split_tex_body(body: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Row / column exclusion
+# ---------------------------------------------------------------------------
+
+def exclude_rows(table: TableData, indices: set[int]):
+    """Remove data rows at the given 0-based indices. Mutates in-place."""
+    if not indices:
+        return
+    num_headers = len(table.headers)
+
+    keep = [ri for ri in range(len(table.data)) if ri not in indices]
+    table.data = [table.data[ri] for ri in keep]
+
+    if table.tex_rows:
+        tex_keep = list(range(num_headers))
+        tex_keep.extend(ri + num_headers for ri in keep)
+        table.tex_rows = [table.tex_rows[ri] for ri in tex_keep]
+        if table.tex_hlines:
+            old_to_new = {old: new for new, old in enumerate(tex_keep)}
+            table.tex_hlines = {
+                old_to_new[h] for h in table.tex_hlines if h in old_to_new
+            }
+
+
+def exclude_cols(table: TableData, indices: set[int]) -> dict[int, int]:
+    """Remove columns at the given 0-based indices. Returns {old_idx: new_idx} mapping."""
+    if not indices:
+        return {ci: ci for ci in range(len(table.columns))}
+
+    num_cols = len(table.headers[0]) if table.headers else (
+        len(table.data[0]) if table.data else 0)
+    keep = [ci for ci in range(num_cols) if ci not in indices]
+
+    if table.headers:
+        table.headers = [[row[ci] for ci in keep] for row in table.headers]
+    table.data = [[row[ci] for ci in keep] for row in table.data]
+    if table.tex_rows:
+        table.tex_rows = [[row[ci] for ci in keep] for row in table.tex_rows]
+
+    # Rebuild columns preserving descend / bg_color
+    old_meta = {c.index: c for c in table.columns}
+    table.columns = _build_column_meta(table.data, len(keep))
+    for ci in range(len(keep)):
+        old_idx = keep[ci]
+        if old_idx in old_meta:
+            table.columns[ci].descend = old_meta[old_idx].descend
+            table.columns[ci].bg_color = old_meta[old_idx].bg_color
+
+    return {old: new for new, old in enumerate(keep)}
+
+
+def expand_multirow_spans(table: TableData, row_indices: set[int]) -> set[int]:
+    """If an excluded row's first cell contains \\multirow{N}, add the
+    next N-1 rows to the set."""
+    if not table.tex_rows or not row_indices:
+        return set(row_indices)
+
+    num_headers = len(table.headers)
+    result = set(row_indices)
+
+    for ri in sorted(row_indices):
+        tex_ri = ri + num_headers
+        if tex_ri < len(table.tex_rows):
+            cell = (table.tex_rows[tex_ri][0]
+                    if table.tex_rows[tex_ri] else '')
+            m = re.match(r'\\multirow\{(\d+)\}', cell)
+            if m:
+                n = int(m.group(1))
+                for i in range(1, n):
+                    result.add(ri + i)
+
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
 
@@ -226,6 +300,5 @@ def _build_column_meta(data: list[list[str]], num_cols: int) -> list[ColumnMeta]
             is_num, _, _ = parse_cell_value(cell)
             if is_num:
                 numeric_count += 1
-        # Process column if it has at least 2 numeric values
         columns.append(ColumnMeta(index=ci, is_numeric=numeric_count >= 2))
     return columns
