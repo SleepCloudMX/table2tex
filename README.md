@@ -26,7 +26,16 @@ table2tex data.tex -o out.tex
 table2tex data.md                  # 省略 -o 则打印到 stdout
 ```
 
-### （2）常用选项
+### （2）目录批量转换
+
+```bash
+table2tex input_dir/ -o output_dir/     # 批量转换，生成 summary.md
+table2tex input_dir/                    # 逐个打印到 stdout
+```
+
+同名不同后缀（如 `a.md`、`a.tex`）自动用 `a.md.tex`、`a.tex.tex` 区分。
+
+### （3）常用选项
 
 ```bash
 table2tex data.md --column-bg 5:blue!12 6:yellow!12 -o out.tex
@@ -38,8 +47,8 @@ table2tex data.md --no-document    # 只输出 tabular 块
 
 | 参数 | 说明 |
 |------|------|
-| `input` | 输入文件路径（.md / .csv / .xlsx / .xls / .tex） |
-| `-o, --output` | 输出 .tex 路径（默认打印到 stdout，自动创建父目录） |
+| `input` | 输入文件或目录（.md / .csv / .xlsx / .xls / .tex） |
+| `-o, --output` | 输出 .tex 文件或目录（默认打印到 stdout） |
 | `--descend COL [COL ...]` | 1-based 列号，指定越小越好的列 |
 | `--column-bg COL:COLOR [...]` | 1-based 列背景色，如 `5:blue!12`。颜色为 xcolor 语法 |
 | `--no-document` | 只输出 tabular 块 |
