@@ -20,6 +20,11 @@ from table2tex.utils import strip_tex_formatting
 _SUPPORTED = {'.md', '.csv', '.xls', '.xlsx', '.tex'}
 
 
+def _warn(msg: str, verbose: bool):
+    if verbose:
+        print(msg, file=sys.stderr)
+
+
 # ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
@@ -43,6 +48,8 @@ def main():
                         help='Columns to exclude (index or header name)')
     parser.add_argument('--no-document', action='store_true',
                         help='Output only the tabular body, no document wrapper')
+    parser.add_argument('--verbose', action='store_true',
+                        help='Show warnings for unresolved SPEC values')
     parser.add_argument('--sheet', type=str, default=None,
                         help='Excel sheet name (default: active sheet)')
 
@@ -149,6 +156,8 @@ def _process_directory(input_dir: Path, out_dir: Path | None, args):
 def _convert_one(input_path: Path, args) -> tuple[str, str]:
     """Convert a single file. Returns (output_tex, env_type)."""
     table = parse_table(str(input_path), sheet_name=args.sheet)
+    verbose = args.verbose
+    name = input_path.name
 
     # --- resolve column specs (before exclusion, against original table) ---
     headers0 = table.headers[0] if table.headers else []
@@ -164,23 +173,20 @@ def _convert_one(input_path: Path, args) -> tuple[str, str]:
             if idx is not None:
                 descend_indices.add(idx)
             else:
-                print(f"Warning: --descend '{spec}' not resolved in {input_path.name}",
-                      file=sys.stderr)
+                _warn(f"--descend '{spec}' not resolved in {name}", verbose)
 
     bg_specs: dict[int, str] = {}  # old_col_idx → color
     if args.column_bg is not None:
         for spec in args.column_bg:
             col_spec, color = _split_bg_spec(spec)
             if col_spec is None:
-                print(f"Warning: --column-bg '{spec}' invalid format in "
-                      f"{input_path.name}", file=sys.stderr)
+                _warn(f"--column-bg '{spec}' invalid format in {name}", verbose)
                 continue
             idx = _resolve_col_spec(col_spec, headers0, num_cols)
             if idx is not None:
                 bg_specs[idx] = color
             else:
-                print(f"Warning: --column-bg '{col_spec}' not resolved in "
-                      f"{input_path.name}", file=sys.stderr)
+                _warn(f"--column-bg '{col_spec}' not resolved in {name}", verbose)
 
     # --- resolve row exclusion ---
     excluded_rows: set[int] = set()
@@ -190,8 +196,7 @@ def _convert_one(input_path: Path, args) -> tuple[str, str]:
             if indices:
                 excluded_rows.update(indices)
             else:
-                print(f"Warning: --exclude-rows '{spec}' not resolved in "
-                      f"{input_path.name}", file=sys.stderr)
+                _warn(f"--exclude-rows '{spec}' not resolved in {name}", verbose)
         # Expand multirow spans in TeX
         excluded_rows = expand_multirow_spans(table, excluded_rows)
 
@@ -203,8 +208,7 @@ def _convert_one(input_path: Path, args) -> tuple[str, str]:
             if indices:
                 excluded_cols.update(indices)
             else:
-                print(f"Warning: --exclude-cols '{spec}' not resolved in "
-                      f"{input_path.name}", file=sys.stderr)
+                _warn(f"--exclude-cols '{spec}' not resolved in {name}", verbose)
 
     # --- apply exclusions ---
     exclude_rows(table, excluded_rows)
